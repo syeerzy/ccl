@@ -55,7 +55,21 @@
          (parent (#/stringByDeletingLastPathComponent bundle-path))
          (path (ccl::ensure-directory-pathname
                 (lisp-string-from-nsstring parent))))
-    (ccl::replace-base-translation "ccl:" path)))
+    (ccl::replace-base-translation "ccl:" path)
+    (init-bundled-interfaces-root (lisp-string-from-nsstring bundle-path))))
+
+;; Headers are copied to <bundle>/Contents/Resources/ccl/<subdirs> at build
+;; time.  Prefer them over whatever CCL: points to, so the app still works
+;; after it is moved to another folder.
+(defun init-bundled-interfaces-root (bundle-namestring)
+  (let* ((bundle (ccl::ensure-directory-pathname bundle-namestring))
+         (subdirs (ccl::cdb-subdirectory-path))
+         (root (make-pathname
+                :directory (append (pathname-directory bundle)
+                                   '("Contents" "Resources" "ccl")))))
+    (when (probe-file (make-pathname
+                       :directory (append (pathname-directory root) subdirs)))
+      (setq ccl::*interfaces-root* root))))
 
 
 (defvar *ccl-ide-init-file* "home:ccl-ide-init")
